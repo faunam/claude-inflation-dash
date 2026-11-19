@@ -36,3 +36,13 @@ export const CPI_CATEGORIES = [
 ];
 
 export const SERIES = [...HEADLINE, ...CPI_CATEGORIES];
+
+// Average retail prices (U.S. city average, BLS) for a few everyday items.
+// These are dollar prices, not indexes, and are not seasonally adjusted.
+export const PRICES = [
+  { id: 'APU000074714', label: 'Gasoline', unit: 'gallon', detail: 'Unleaded regular, per gallon', icon: 'gas' },
+  { id: 'APU0000702111', label: 'Bread', unit: 'lb', detail: 'White pan bread, per pound', icon: 'bread' },
+  { id: 'APU0000711211', label: 'Bananas', unit: 'lb', detail: 'Per pound', icon: 'banana' },
+];
+
+export const PRICE_YEARS = 20;

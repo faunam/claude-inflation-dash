@@ -6,7 +6,7 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { SERIES } from '../src/series.js';
+import { SERIES, PRICES, PRICE_YEARS } from '../src/series.js';
 
 const OUT = resolve(dirname(fileURLToPath(import.meta.url)), '../public/data/inflation.json');
 const API_KEY = process.env.FRED_API_KEY;
@@ -14,7 +14,13 @@ const API_KEY = process.env.FRED_API_KEY;
 // Enough history for the 12-month window plus the 12 months before it.
 const start = new Date();
 start.setUTCMonth(start.getUTCMonth() - 36);
-const START = `${start.getUTCFullYear()}-${String(start.getUTCMonth() + 1).padStart(2, '0')}-01`;
+const isoMonth = (d) => `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-01`;
+const START = isoMonth(start);
+
+// Average prices cover a longer window, plus one spare year.
+const priceStart = new Date();
+priceStart.setUTCFullYear(priceStart.getUTCFullYear() - PRICE_YEARS - 1);
+const PRICE_START = isoMonth(priceStart);
 
 async function get(url) {
   for (let attempt = 1; ; attempt++) {
@@ -25,13 +31,13 @@ async function get(url) {
   }
 }
 
-async function observations(id) {
+async function observations(id, from = START) {
   if (API_KEY) {
-    const url = `https://api.stlouisfed.org/fred/series/observations?series_id=${id}&api_key=${API_KEY}&file_type=json&observation_start=${START}`;
+    const url = `https://api.stlouisfed.org/fred/series/observations?series_id=${id}&api_key=${API_KEY}&file_type=json&observation_start=${from}`;
     const json = await (await get(url)).json();
     return json.observations.map((o) => ({ date: o.date, value: Number(o.value) }));
   }
-  const url = `https://fred.stlouisfed.org/graph/fredgraph.csv?id=${id}&cosd=${START}`;
+  const url = `https://fred.stlouisfed.org/graph/fredgraph.csv?id=${id}&cosd=${from}`;
   const lines = (await (await get(url)).text()).trim().split(/\r?\n/).slice(1);
   return lines.map((line) => {
     const [date, value] = line.split(',');
@@ -59,6 +65,15 @@ for (const s of SERIES) {
   console.log(`${s.id.padEnd(9)} ${points.length} months, latest ${points.at(-1).date}: ${points.at(-1).yoy}%`);
 }
 
+// Average prices stay as dollar values. Months FRED reports as missing are dropped.
+const prices = {};
+for (const s of PRICES) {
+  const points = (await observations(s.id, PRICE_START)).filter((o) => Number.isFinite(o.value) && o.value > 0);
+  if (!points.length) throw new Error(`No price data for ${s.id}`);
+  prices[s.id] = points;
+  console.log(`${s.id.padEnd(13)} ${points.length} months, latest ${points.at(-1).date}: $${points.at(-1).value}`);
+}
+
 await mkdir(dirname(OUT), { recursive: true });
-await writeFile(OUT, JSON.stringify({ updated: new Date().toISOString(), source: 'FRED, Federal Reserve Bank of St. Louis', series }, null, 1));
+await writeFile(OUT, JSON.stringify({ updated: new Date().toISOString(), source: 'FRED, Federal Reserve Bank of St. Louis', series, prices }, null, 1));
 console.log(`Wrote ${OUT}`);

@@ -72,6 +72,21 @@ header { margin-bottom: 20px; }
 .latest thead th { color: var(--text-secondary); font-weight: 500; }
 .swatch { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 8px; vertical-align: -1px; }
 .swatch.ref { height: 0; border-top: 2px dashed var(--reference); border-radius: 0; vertical-align: 3px; }
+.muted { color: var(--text-muted); font-weight: 400; }
+.price-items { list-style: none; padding: 0; margin: 12px 0 4px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+.price-items li { display: flex; gap: 12px; align-items: flex-start; border-left: 3px solid var(--swatch); padding-left: 12px; }
+.price-items h3 { font-size: 1rem; margin: 0; }
+.price-items p { margin: 0; }
+.price-items .detail { color: var(--text-secondary); font-size: 0.85rem; }
+.price-items .price { font-size: 1.25rem; font-weight: 600; font-variant-numeric: tabular-nums; margin-top: 2px; }
+.price-items .price span { font-size: 0.8rem; font-weight: 400; color: var(--text-muted); }
+.icon-badge {
+  flex: none; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 10px;
+  color: var(--swatch); background: color-mix(in srgb, var(--swatch) 14%, transparent);
+}
+.th-icon { display: inline-block; vertical-align: -5px; margin-right: 4px; }
+.th-icon .icon { width: 18px; height: 18px; }
+.latest caption { text-align: left; font-weight: 600; font-size: 0.95rem; padding-bottom: 4px; }
 .error { background: var(--surface-1); border: 1px solid var(--series-8); border-radius: 8px; padding: 12px 16px; }
 footer { font-size: 0.85rem; }
 footer a { color: inherit; }

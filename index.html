@@ -26,8 +26,16 @@
         <table id="category-table" class="latest"></table>
       </section>
 
+      <section class="card">
+        <h2>Gas, bread and bananas, past 20 years</h2>
+        <p class="note">Average U.S. retail price in dollars, by month.</p>
+        <ul id="price-items" class="price-items"></ul>
+        <div class="chart tall"><canvas id="price-chart" aria-label="Average U.S. price of gasoline, bread and bananas over the past 20 years" role="img"></canvas></div>
+        <table id="price-table" class="latest"></table>
+      </section>
+
       <p id="error" class="error" hidden></p>
-      <footer>Data: <a href="https://fred.stlouisfed.org/">FRED, Federal Reserve Bank of St. Louis</a>. All series seasonally adjusted.</footer>
+      <footer>Data: <a href="https://fred.stlouisfed.org/">FRED, Federal Reserve Bank of St. Louis</a>. Index series are seasonally adjusted; average prices are not.</footer>
     </main>
     <script type="module" src="/src/main.js"></script>
   </body>
