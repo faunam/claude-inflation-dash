@@ -11,9 +11,10 @@ import { SERIES } from '../src/series.js';
 const OUT = resolve(dirname(fileURLToPath(import.meta.url)), '../public/data/inflation.json');
 const API_KEY = process.env.FRED_API_KEY;
 
-// Enough history for the 12-month window plus the 12 months before it.
+// Enough history for the 20-year window plus the 12 months before it
+// (needed to compute year-over-year change), with a little slack.
 const start = new Date();
-start.setUTCMonth(start.getUTCMonth() - 36);
+start.setUTCMonth(start.getUTCMonth() - 12 * 22);
 const START = `${start.getUTCFullYear()}-${String(start.getUTCMonth() + 1).padStart(2, '0')}-01`;
 
 async function get(url) {

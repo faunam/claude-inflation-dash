@@ -1,7 +1,7 @@
 # claude-inflation dash
 testing claude by making a small dashboard to track inflation
 
-Two charts covering the past 12 months, each showing year-over-year % price change by month:
+Charts of year-over-year % price change by month, each shown for the past 12 months and the past 20 years:
 
 1. **CPI, PCE and PPI**, with a short definition of each.
 2. **CPI by category**: the eight major groups of the CPI basket (housing, transportation, food & beverages, medical care, education & communication, recreation, apparel, other), with overall CPI as a dashed reference line and a table of the first and last month.
