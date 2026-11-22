@@ -9,25 +9,37 @@
   <body>
     <main>
       <header>
-        <h1>Inflation, past 12 months</h1>
+        <h1>Inflation</h1>
         <p class="sub">Year-over-year % change in prices, by month. <span id="updated"></span></p>
       </header>
 
       <section class="card">
-        <h2>CPI, PCE and PPI</h2>
+        <h2>CPI, PCE and PPI <span class="range">past 12 months</span></h2>
         <div class="chart"><canvas id="headline-chart" aria-label="Year-over-year change in CPI, PCE and PPI over the past 12 months" role="img"></canvas></div>
         <dl id="definitions" class="definitions"></dl>
       </section>
 
       <section class="card">
-        <h2>CPI by category</h2>
+        <h2>CPI by category <span class="range">past 12 months</span></h2>
         <p class="note">The eight major groups of the CPI basket. Dashed gray is overall CPI.</p>
         <div class="chart tall"><canvas id="category-chart" aria-label="Year-over-year change in each CPI category over the past 12 months" role="img"></canvas></div>
         <table id="category-table" class="latest"></table>
       </section>
 
       <section class="card">
-        <h2>Gas, bread and bananas, past 20 years</h2>
+        <h2>CPI, PCE and PPI <span class="range">past 20 years</span></h2>
+        <p class="note">The PPI final-demand index starts in late 2009, so its line begins in late 2010.</p>
+        <div class="chart"><canvas id="headline-chart-20y" aria-label="Year-over-year change in CPI, PCE and PPI over the past 20 years" role="img"></canvas></div>
+      </section>
+
+      <section class="card">
+        <h2>CPI by category <span class="range">past 20 years</span></h2>
+        <p class="note">Dashed gray is overall CPI.</p>
+        <div class="chart tall"><canvas id="category-chart-20y" aria-label="Year-over-year change in each CPI category over the past 20 years" role="img"></canvas></div>
+      </section>
+
+      <section class="card">
+        <h2>Gas, bread and bananas <span class="range">past 20 years</span></h2>
         <p class="note">Average U.S. retail price in dollars, by month.</p>
         <ul id="price-items" class="price-items"></ul>
         <div class="chart tall"><canvas id="price-chart" aria-label="Average U.S. price of gasoline, bread and bananas over the past 20 years" role="img"></canvas></div>
