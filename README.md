@@ -1,6 +1,8 @@
 # claude-inflation dash
 testing claude by making a small dashboard to track inflation
 
+[View live page here] (https://faunam.github.io/claude-inflation-dash/)
+
 Charts of year-over-year % price change by month, each shown for the past 12 months and the past 20 years:
 
 1. **CPI, PCE and PPI**, with a short definition of each.
