@@ -8,7 +8,8 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
-import { HEADLINE, CPI_CATEGORIES } from './series.js';
+import { HEADLINE, CPI_CATEGORIES, PRICES, PRICE_YEARS } from './series.js';
+import { ICONS } from './icons.js';
 
 Chart.register(LineController, LineElement, PointElement, LinearScale, CategoryScale, Tooltip, Legend);
 
@@ -16,6 +17,7 @@ const css = (name) => getComputedStyle(document.documentElement).getPropertyValu
 const monthFmt = new Intl.DateTimeFormat('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' });
 const fmtMonth = (iso) => monthFmt.format(new Date(`${iso}T00:00:00Z`));
 const fmtPct = (v) => (v == null ? '–' : `${v.toFixed(1)}%`);
+const fmtUsd = (v) => (v == null ? '–' : `$${v.toFixed(2)}`);
 
 // The `count` calendar months ending with the newest month any series has.
 function lastMonths(series, count) {
@@ -30,23 +32,26 @@ function lastMonths(series, count) {
     return d.toISOString().slice(0, 10);
   });
 }
+const lastTwelveMonths = (series) => lastMonths(series, 12);
 
-function valuesFor(points, months) {
-  const byDate = new Map(points.map((p) => [p.date, p.yoy]));
+function valuesFor(points, months, field = 'yoy') {
+  const byDate = new Map((points ?? []).map((p) => [p.date, p[field]]));
   return months.map((m) => byDate.get(m) ?? null);
 }
 
-function lineChart(canvas, months, datasets) {
+function lineChart(canvas, months, datasets, { fmt = fmtPct, yTick = (v) => `${v}%`, legend = true } = {}) {
   const text = css('--text-secondary');
   const grid = css('--grid');
   const long = months.length > 24;
-  // Long ranges: label every other January with just the year.
+  // Long ranges: label a January with just the year, every other year
+  // (every fifth on narrow screens so labels don't collide).
+  const every = canvas.clientWidth < 600 ? 5 : 2;
   const xTicks = long
     ? {
         autoSkip: false,
         callback: (_, i) => {
           const [y, m] = months[i].split('-');
-          return m === '01' && Number(y) % 2 === 0 ? y : null;
+          return m === '01' && Number(y) % every === 0 ? y : null;
         },
       }
     : { autoSkipPadding: 12 };
@@ -67,18 +72,19 @@ function lineChart(canvas, months, datasets) {
         y: {
           grid: { color: grid },
           border: { display: false },
-          ticks: { color: text, callback: (v) => `${v}%` },
+          ticks: { color: text, callback: yTick },
         },
       },
       plugins: {
         legend: {
+          display: legend,
           position: 'top',
           align: 'start',
           labels: { color: css('--text-primary'), usePointStyle: true, pointStyle: 'line', boxWidth: 24, padding: 14 },
         },
         tooltip: {
           itemSort: (a, b) => (b.raw ?? -Infinity) - (a.raw ?? -Infinity),
-          callbacks: { label: (ctx) => ` ${ctx.dataset.label}: ${fmtPct(ctx.raw)}` },
+          callbacks: { label: (ctx) => ` ${ctx.dataset.label}: ${fmt(ctx.raw)}` },
         },
       },
     },
@@ -124,6 +130,23 @@ function render(data) {
     lineChart(el('headline-chart-20y'), twenty, headlineSets(data, twenty)),
     lineChart(el('category-chart-20y'), twenty, categorySets(data, twenty)),
   ];
+
+  if (data.prices) {
+    const priceMonths = lastMonths(data.prices, PRICE_YEARS * 12);
+    const priceSets = PRICES.map((s, i) => ({
+      label: s.label,
+      data: valuesFor(data.prices[s.id], priceMonths, 'value'),
+      borderColor: css(`--series-${i + 1}`),
+      backgroundColor: css(`--series-${i + 1}`),
+    }));
+    charts.push(
+      lineChart(el('price-chart'), priceMonths, priceSets, {
+        fmt: fmtUsd,
+        yTick: (v) => `$${v.toFixed(2)}`,
+        legend: false,
+      }),
+    );
+  }
 }
 
 function renderDefinitions() {
@@ -151,6 +174,52 @@ function renderTable(data) {
     <tbody>${rows.join('')}</tbody>`;
 }
 
+// Item headers with an icon, the latest price and the change over the window,
+// plus a table of yearly average prices below the chart.
+function renderPrices(data) {
+  if (!data.prices) return;
+  const months = lastMonths(data.prices, PRICE_YEARS * 12);
+  const inWindow = (id) => (data.prices[id] ?? []).filter((p) => p.date >= months[0]);
+
+  document.getElementById('price-items').innerHTML = PRICES.map((s, i) => {
+    const pts = inWindow(s.id);
+    const [first, last] = [pts[0], pts.at(-1)];
+    const change = first && last ? Math.round((last.value / first.value - 1) * 100) : null;
+    const since = first ? first.date.slice(0, 4) : '';
+    return `<li style="--swatch: var(--series-${i + 1})">
+      <span class="icon-badge">${ICONS[s.icon]}</span>
+      <div>
+        <h3>${s.label}</h3>
+        <p class="detail">${s.detail}</p>
+        <p class="price">${fmtUsd(last?.value)}<span> ${last ? fmtMonth(last.date) : ''}</span></p>
+        ${change == null ? '' : `<p class="detail">${change >= 0 ? '+' : ''}${change}% since ${since}</p>`}
+      </div>
+    </li>`;
+  }).join('');
+
+  // Average of the months available in each calendar year, newest year first.
+  const years = [...new Set(months.map((m) => m.slice(0, 4)))].reverse();
+  const [firstMonth, latestMonth] = [months[0], months.at(-1)];
+  const monthName = (iso) => fmtMonth(iso).split(' ')[0];
+  const rows = years.map((y) => {
+    const cells = PRICES.map((s) => {
+      const vals = inWindow(s.id).filter((p) => p.date.startsWith(y)).map((p) => p.value);
+      return `<td>${vals.length ? fmtUsd(vals.reduce((a, b) => a + b, 0) / vals.length) : '–'}</td>`;
+    });
+    let label = y;
+    if (latestMonth.startsWith(y) && !latestMonth.endsWith('-12-01')) label += ` <span class="muted">(through ${monthName(latestMonth)})</span>`;
+    else if (firstMonth.startsWith(y) && !firstMonth.endsWith('-01-01')) label += ` <span class="muted">(from ${monthName(firstMonth)})</span>`;
+    return `<tr><td>${label}</td>${cells.join('')}</tr>`;
+  });
+  const head = PRICES.map(
+    (s, i) => `<th><span class="th-icon" style="color: var(--series-${i + 1})">${ICONS[s.icon]}</span>${s.label} <span class="muted">/ ${s.unit}</span></th>`,
+  ).join('');
+  document.getElementById('price-table').innerHTML = `
+    <caption>Yearly average price</caption>
+    <thead><tr><th>Year</th>${head}</tr></thead>
+    <tbody>${rows.join('')}</tbody>`;
+}
+
 async function main() {
   renderDefinitions();
   try {
@@ -160,6 +229,7 @@ async function main() {
     document.getElementById('updated').textContent = `Data fetched ${new Date(data.updated).toLocaleDateString()}.`;
     render(data);
     renderTable(data);
+    renderPrices(data);
     matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => render(data));
   } catch (err) {
     const el = document.getElementById('error');

@@ -6,7 +6,7 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { SERIES } from '../src/series.js';
+import { SERIES, PRICES, PRICE_YEARS } from '../src/series.js';
 
 const OUT = resolve(dirname(fileURLToPath(import.meta.url)), '../public/data/inflation.json');
 const API_KEY = process.env.FRED_API_KEY;
@@ -14,7 +14,7 @@ const API_KEY = process.env.FRED_API_KEY;
 // Enough history for the 20-year window plus the 12 months before it
 // (needed to compute year-over-year change), with a little slack.
 const start = new Date();
-start.setUTCMonth(start.getUTCMonth() - 12 * 22);
+start.setUTCMonth(start.getUTCMonth() - 12 * (PRICE_YEARS + 2));
 const START = `${start.getUTCFullYear()}-${String(start.getUTCMonth() + 1).padStart(2, '0')}-01`;
 
 async function get(url) {
@@ -60,6 +60,15 @@ for (const s of SERIES) {
   console.log(`${s.id.padEnd(9)} ${points.length} months, latest ${points.at(-1).date}: ${points.at(-1).yoy}%`);
 }
 
+// Average prices stay as dollar values. Months FRED reports as missing are dropped.
+const prices = {};
+for (const s of PRICES) {
+  const points = (await observations(s.id)).filter((o) => Number.isFinite(o.value) && o.value > 0);
+  if (!points.length) throw new Error(`No price data for ${s.id}`);
+  prices[s.id] = points;
+  console.log(`${s.id.padEnd(13)} ${points.length} months, latest ${points.at(-1).date}: $${points.at(-1).value}`);
+}
+
 await mkdir(dirname(OUT), { recursive: true });
-await writeFile(OUT, JSON.stringify({ updated: new Date().toISOString(), source: 'FRED, Federal Reserve Bank of St. Louis', series }, null, 1));
+await writeFile(OUT, JSON.stringify({ updated: new Date().toISOString(), source: 'FRED, Federal Reserve Bank of St. Louis', series, prices }, null, 1));
 console.log(`Wrote ${OUT}`);
